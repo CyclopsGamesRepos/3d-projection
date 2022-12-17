@@ -52,10 +52,14 @@ public class GraphicsMath : MonoBehaviour
         return dotX + dotY;
     }
 
-    private float CalculateCross(Vector2 v1, Vector2 v2)
+    private Vector3 CalculateCross(Vector3 v1, Vector3 v2)
     {
-        // I originally wrote this to return a V2. Cross product does not naturally return a V2, and therefore it
-        //  must be re-written
-        return 0.0f;
+        // Cross Product returns a new Vector3 perpendicular to both v1 and v2
+        // https://www.mathsisfun.com/algebra/vectors-cross-product.html
+        float crossX = (v1.y * v2.z) - (v1.z * v2.y);
+        float crossY = (v1.z * v2.x) - (v1.x * v2.z);
+        float crossZ = (v1.x * v2.y) - (v1.y * v2.x);
+        
+        return new Vector3(crossX, crossY, crossZ);
     }
 }
