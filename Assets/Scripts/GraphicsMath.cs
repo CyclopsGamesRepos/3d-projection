@@ -82,4 +82,113 @@ public class GraphicsMath : MonoBehaviour
         matrix.m32 *= scalar;
         matrix.m33 *= scalar;
     }
+
+    private Matrix4x4 MultiplyMatricesByMatrices(Matrix4x4 rowMatrix, Matrix4x4 columnMatrix)
+    {
+        // https://www.mathsisfun.com/algebra/matrix-multiplying.html
+        // https://docs.unity3d.com/ScriptReference/Matrix4x4.html
+        Matrix4x4 returnMatrix;
+        
+        // First row
+        float tempSum1 = rowMatrix.m00 * columnMatrix.m00;
+        float tempSum2 = rowMatrix.m01 * columnMatrix.m10;
+        float tempSum3 = rowMatrix.m02 * columnMatrix.m20;
+        float tempSum4 = rowMatrix.m03 * columnMatrix.m30;
+        returnMatrix.m00 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m00 * columnMatrix.m01;
+        tempSum2 = rowMatrix.m01 * columnMatrix.m11;
+        tempSum3 = rowMatrix.m02 * columnMatrix.m21;
+        tempSum4 = rowMatrix.m03 * columnMatrix.m31;
+        returnMatrix.m01 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m00 * columnMatrix.m02;
+        tempSum2 = rowMatrix.m01 * columnMatrix.m12;
+        tempSum3 = rowMatrix.m02 * columnMatrix.m22;
+        tempSum4 = rowMatrix.m03 * columnMatrix.m32;
+        returnMatrix.m02 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m00 * columnMatrix.m03;
+        tempSum2 = rowMatrix.m01 * columnMatrix.m13;
+        tempSum3 = rowMatrix.m02 * columnMatrix.m23;
+        tempSum4 = rowMatrix.m03 * columnMatrix.m33;
+        returnMatrix.m03 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        // Second row
+        tempSum1 = rowMatrix.m10 * columnMatrix.m00;
+        tempSum2 = rowMatrix.m11 * columnMatrix.m10;
+        tempSum3 = rowMatrix.m12 * columnMatrix.m20;
+        tempSum4 = rowMatrix.m13 * columnMatrix.m30;
+        returnMatrix.m10 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m10 * columnMatrix.m01;
+        tempSum2 = rowMatrix.m11 * columnMatrix.m11;
+        tempSum3 = rowMatrix.m12 * columnMatrix.m21;
+        tempSum4 = rowMatrix.m13 * columnMatrix.m31;
+        returnMatrix.m11 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m10 * columnMatrix.m02;
+        tempSum2 = rowMatrix.m11 * columnMatrix.m12;
+        tempSum3 = rowMatrix.m12 * columnMatrix.m22;
+        tempSum4 = rowMatrix.m13 * columnMatrix.m32;
+        returnMatrix.m12 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m10 * columnMatrix.m03;
+        tempSum2 = rowMatrix.m11 * columnMatrix.m13;
+        tempSum3 = rowMatrix.m12 * columnMatrix.m23;
+        tempSum4 = rowMatrix.m13 * columnMatrix.m33;
+        returnMatrix.m13 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        // Third row
+        tempSum1 = rowMatrix.m20 * columnMatrix.m00;
+        tempSum2 = rowMatrix.m21 * columnMatrix.m10;
+        tempSum3 = rowMatrix.m22 * columnMatrix.m20;
+        tempSum4 = rowMatrix.m23 * columnMatrix.m30;
+        returnMatrix.m20 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m20 * columnMatrix.m01;
+        tempSum2 = rowMatrix.m21 * columnMatrix.m11;
+        tempSum3 = rowMatrix.m22 * columnMatrix.m21;
+        tempSum4 = rowMatrix.m23 * columnMatrix.m31;
+        returnMatrix.m21 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m20 * columnMatrix.m02;
+        tempSum2 = rowMatrix.m21 * columnMatrix.m12;
+        tempSum3 = rowMatrix.m22 * columnMatrix.m22;
+        tempSum4 = rowMatrix.m23 * columnMatrix.m32;
+        returnMatrix.m22 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m20 * columnMatrix.m03;
+        tempSum2 = rowMatrix.m21 * columnMatrix.m13;
+        tempSum3 = rowMatrix.m22 * columnMatrix.m23;
+        tempSum4 = rowMatrix.m23 * columnMatrix.m33;
+        returnMatrix.m23 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        // Fourth row
+        tempSum1 = rowMatrix.m30 * columnMatrix.m00;
+        tempSum2 = rowMatrix.m31 * columnMatrix.m10;
+        tempSum3 = rowMatrix.m32 * columnMatrix.m20;
+        tempSum4 = rowMatrix.m33 * columnMatrix.m30;
+        returnMatrix.m30 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m30 * columnMatrix.m01;
+        tempSum2 = rowMatrix.m31 * columnMatrix.m11;
+        tempSum3 = rowMatrix.m32 * columnMatrix.m21;
+        tempSum4 = rowMatrix.m33 * columnMatrix.m31;
+        returnMatrix.m31 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m30 * columnMatrix.m02;
+        tempSum2 = rowMatrix.m31 * columnMatrix.m12;
+        tempSum3 = rowMatrix.m32 * columnMatrix.m22;
+        tempSum4 = rowMatrix.m33 * columnMatrix.m32;
+        returnMatrix.m32 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+        
+        tempSum1 = rowMatrix.m30 * columnMatrix.m03;
+        tempSum2 = rowMatrix.m31 * columnMatrix.m13;
+        tempSum3 = rowMatrix.m32 * columnMatrix.m23;
+        tempSum4 = rowMatrix.m33 * columnMatrix.m33;
+        returnMatrix.m33 = tempSum1 + tempSum2 + tempSum3 + tempSum4;
+
+        return returnMatrix;
+    }
 }
