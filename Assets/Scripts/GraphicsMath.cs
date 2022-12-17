@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class GraphicsMath : MonoBehaviour
 {
-    
+
     // return v1 + v2 (vectors MUST be of the same dimensions)
     private Vector2 AddVector(Vector2 v1, Vector2 v2)
     {
@@ -59,7 +59,27 @@ public class GraphicsMath : MonoBehaviour
         float crossX = (v1.y * v2.z) - (v1.z * v2.y);
         float crossY = (v1.z * v2.x) - (v1.x * v2.z);
         float crossZ = (v1.x * v2.y) - (v1.y * v2.x);
-        
+
         return new Vector3(crossX, crossY, crossZ);
+    }
+
+    private void MutiplyMatricesByScalar(Matrix4x4 matrix, float scalar)
+    {
+        matrix.m00 *= scalar;
+        matrix.m01 *= scalar;
+        matrix.m02 *= scalar;
+        matrix.m03 *= scalar;
+        matrix.m10 *= scalar;
+        matrix.m11 *= scalar;
+        matrix.m12 *= scalar;
+        matrix.m13 *= scalar;
+        matrix.m20 *= scalar;
+        matrix.m21 *= scalar;
+        matrix.m22 *= scalar;
+        matrix.m23 *= scalar;
+        matrix.m30 *= scalar;
+        matrix.m31 *= scalar;
+        matrix.m32 *= scalar;
+        matrix.m33 *= scalar;
     }
 }
