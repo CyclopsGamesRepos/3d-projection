@@ -3,6 +3,10 @@ using UnityEngine;
 
 public class GraphicsMath : MonoBehaviour
 {
+    public static Matrix4x4 OrthogonalProjection4x4Matrix = new Matrix4x4(new Vector4(1, 0, 0, 0),
+                                                                          new Vector4(0, 1, 0, 0),
+                                                                          new Vector4(0, 0, 0, 0),
+                                                                          new Vector4(0, 0, 0, 1) );
 
     // return v1 + v2 (vectors MUST be of the same dimensions)
     private Vector3 AddVector(Vector3 v1, Vector3 v2)
@@ -87,6 +91,28 @@ public class GraphicsMath : MonoBehaviour
         matrix.m31 *= scalar;
         matrix.m32 *= scalar;
         matrix.m33 *= scalar;
+    }
+
+    /// <summary>
+    /// Takes in a 4x4 matrix and multiplies it by a Vector 4 to get the cross product
+    /// </summary>
+    /// <param name="squareMatrix">The matrix to be multipled</param>
+    /// <param name="columnVector">The vector 4 as a column vector</param>
+    /// <returns></returns>
+    public static Vector4 MultiplyMatrix4ByVector4(Matrix4x4 squareMatrix, Vector4 columnVector)
+    {
+
+        float vecX = (squareMatrix.m00 * columnVector.x) + (squareMatrix.m01 * columnVector.y) + 
+                        (squareMatrix.m02 * columnVector.z) + (squareMatrix.m03 * columnVector.w);
+        float vecY = (squareMatrix.m10 * columnVector.x) + (squareMatrix.m11 * columnVector.y) +
+                        (squareMatrix.m12 * columnVector.z) + (squareMatrix.m13 * columnVector.w);
+        float vecZ = (squareMatrix.m20 * columnVector.x) + (squareMatrix.m21 * columnVector.y) +
+                        (squareMatrix.m22 * columnVector.z) + (squareMatrix.m23 * columnVector.w);
+        float vecW = (squareMatrix.m30 * columnVector.x) + (squareMatrix.m31 * columnVector.y) +
+                        (squareMatrix.m32 * columnVector.z) + (squareMatrix.m33 * columnVector.w);
+
+        Vector4 output = new Vector4(vecX, vecY, vecZ, vecW);
+        return output;
     }
 
     private Matrix4x4 MultiplyMatricesByMatrices(Matrix4x4 rowMatrix, Matrix4x4 columnMatrix)
