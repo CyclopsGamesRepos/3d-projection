@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -8,26 +9,46 @@ using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCou
 
 public class ProjectToPlane : MonoBehaviour
 {
+    public enum ProjectionTypes
+    {
+        ORTHOGRAPHIC,
+        PERSPECTIVE,
+    }
+
     // constant values
     private const int TEXTURE_WIDTH = 128;
     private const int TEXTURE_HEIGHT = 128;
+    private const int DRAW_PLANE_DIST = 5;
+    private const float TOP = 2;
+    private const float BOTTOM = -2;
+    private const float LEFT = -1;
+    private const float RIGHT = 1;
+    private const float NEAR_PLANE = -1f;
+    private const float FAR_PLANE = 1;
 
     // serialized fields to use in the Unity Editor
     [Header("Rendering Objects")]
     [SerializeField] Camera projectionCamera;
+    [SerializeField] ProjectionTypes projectionType;
     //[SerializeField] MeshRenderer renderer;
 
     // public variables used by other scripts
 
     // private variables used by this script
-    private float cameraZOffset;
+    //private Vector4 cameraPositionOffset;
+    //private Vector4 cameraRotationOffset;
+    //private Matrix4x4 cameraProjectionMatrix;
+
+    private Matrix4x4 orhthographixProjectionMatrix;
+    private Matrix4x4 perspectiveProjectionMatrix;
 
     /// <summary>
-    /// Start is called before the first frame update
+    /// Start is called before the first frame update - remove?
     /// </summary>
     void Start()
     {
-        cameraZOffset = projectionCamera.transform.position.z;
+        BuildOrthoMatrix();
+        BuildPespMatrix();
     }
 
     /// <summary>
@@ -35,16 +56,57 @@ public class ProjectToPlane : MonoBehaviour
     /// </summary>
     void Update()
     {
+        // TODO: calculate cameras transform and rotation relative to world origin
+        //UpdateCameraRelativeToWorldOrigin();
+
         // when the space bar is pressed, take a snap shot of the current objects and project them to the plane based on the camera view
-        if (Input.GetKeyDown(KeyCode.Space) )
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            //tryRacast();
-            OrthoganalProjection();
+            switch (projectionType) {
+                case ProjectionTypes.ORTHOGRAPHIC:
+                    //tryRacast();
+                    OrthoganalProjection();
+                    break;
+
+                case ProjectionTypes.PERSPECTIVE:
+                    PersectiveProjection();
+                    break;
+
+                    // Just drop through if the persepctive hasn't been set
+                default:
+                    Debug.Log("No projection type set - nothing to do!");
+                    break;
+            }
         }
         
     } // end Update
 
-    void OrthoganalProjection()
+    /// <summary>
+    /// Updates the vectors to be used in projection based on camera's current position and rotation
+    /// </summary>
+    /*private void UpdateCameraRelativeToWorldOrigin()
+    {
+        // make the camera's position a vector4 for multiplication as the scale
+        cameraPositionOffset = new Vector4(projectionCamera.transform.position.x,
+                                    projectionCamera.transform.position.y,
+                                    projectionCamera.transform.position.z, 1);
+
+        cameraRotationOffset = new Vector4(projectionCamera.transform.rotation.x,
+                                    projectionCamera.transform.rotation.y,
+                                    projectionCamera.transform.rotation.z, 1);
+
+        // for now set up the camera projection matrix based on camera at world origin
+        cameraProjectionMatrix = new Matrix4x4( new Vector4(cameraPositionOffset.x,  0, 0, 0),
+                                                new Vector4(0, cameraPositionOffset.y, 0, 0),
+                                                new Vector4(0, 0, cameraPositionOffset.z, 0),
+                                                new Vector4(0, 0, 0, 1) );
+
+    } // end UpdateCameraRelativeToWorldOrigin*/
+
+    /// <summary>
+    /// Creates an orthographic projection onto the plane for this object
+    /// </summary>
+    private void OrthoganalProjection()
     {
         // grab all the objects in the scene and store the transforms
         GameObject[] gameObjectsInScene = GameObject.FindGameObjectsWithTag("Projection");
@@ -59,7 +121,14 @@ public class ProjectToPlane : MonoBehaviour
             // get the vector 3 position and make it a vector 4
             Vector4 updatedPosition = new Vector4(oldPosition.x, oldPosition.y, oldPosition.z, 1);
 
+            // Transform to orthogonal perspective
+            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(orhthographixProjectionMatrix, updatedPosition);
+
+            // remove the Z component
             updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(GraphicsMath.OrthogonalProjection4x4Matrix, updatedPosition);
+
+            // add the plane distance from the camera
+            updatedPosition.z += DRAW_PLANE_DIST;
 
             gameObjectsInScene[i].transform.position = updatedPosition;
         }
@@ -74,9 +143,41 @@ public class ProjectToPlane : MonoBehaviour
         }
     }
 
-    public void useRenderTexture()
+    /// <summary>
+    /// Creates a perspective projection onto the plane for this object
+    /// </summary>
+    private void PersectiveProjection()
     {
+        // grab all the objects in the scene and store the transforms
+        GameObject[] gameObjectsInScene = GameObject.FindGameObjectsWithTag("Projection");
+        Vector3[] oldTransforms = new Vector3[gameObjectsInScene.Length];
 
+        // go through each game object and remove the z component (orthaganol)
+        for (int i = 0; i < gameObjectsInScene.Length; i++)
+        {
+            Vector3 oldPosition = gameObjectsInScene[i].transform.position;
+            oldTransforms[i] = gameObjectsInScene[i].transform.position;
+
+            // get the vector 3 position and make it a vector 4
+            Vector4 updatedPosition = new Vector4(oldPosition.x, oldPosition.y, oldPosition.z, 1);
+
+            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(perspectiveProjectionMatrix, updatedPosition);
+
+            gameObjectsInScene[i].transform.position = updatedPosition;
+        }
+
+        // render the scene to our image
+        useRenderTexture();
+
+        // put all the objects back!
+        for (int i = 0; i < gameObjectsInScene.Length; i++)
+        {
+            gameObjectsInScene[i].transform.position = oldTransforms[i];
+        }
+    }
+
+    private void useRenderTexture()
+    {
         // create the texture and sprite that will hold that texture
         Texture2D tex = new Texture2D(TEXTURE_WIDTH, TEXTURE_HEIGHT, TextureFormat.ARGB32, false);
         Sprite sprite = Sprite.Create(tex, new Rect(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT), Vector2.zero);
@@ -104,7 +205,39 @@ public class ProjectToPlane : MonoBehaviour
 
     }
 
-    public void tryRacast()
+    /// <summary>
+    /// sets up the orthogonal matrix for this camera
+    /// </summary>
+    private void BuildOrthoMatrix()
+    {
+        orhthographixProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, 0),
+                                                      new Vector4(0, (2 / (TOP - BOTTOM)), 0, 0),
+                                                      new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), 0),
+                                                      new Vector4(-(RIGHT + LEFT) / (RIGHT - LEFT), -(TOP + BOTTOM)/ (TOP - BOTTOM), 
+                                                                  -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), 1));
+        /*orhthographixProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, -(RIGHT + LEFT) / (RIGHT - LEFT)),
+                                                      new Vector4(0, (2 / (TOP - BOTTOM)), 0, -(TOP + BOTTOM) / (TOP - BOTTOM)),
+                                                      new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE)),
+                                                      new Vector4(0, 0, 0, 1));*/
+    }
+
+    /// <summary>
+    /// sets up the perspective matrix for this camera
+    /// </summary>
+    private void BuildPespMatrix()
+    {
+        /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4((2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, 0),
+                                                      new Vector4(0, (2 * NEAR_PLANE) / (TOP - BOTTOM), 0, 0),
+                                                      new Vector4(0, 0, -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -1),
+                                                      new Vector4(-NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT), -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM),
+                                                                  (2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE), 0));*/
+        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(-(2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT)),
+                                                      new Vector4(0, -(2 * NEAR_PLANE) / (TOP - BOTTOM), 0, NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM)),
+                                                      new Vector4(0, 0, (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -(2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE)),
+                                                      new Vector4(0, 0, -1, 0));
+    }
+
+    /*private void tryRacast()
     {
         // grab the plane mesh renderer and set up the material
         Texture2D texture = new Texture2D(TEXTURE_WIDTH, TEXTURE_HEIGHT, TextureFormat.ARGB32, true);
@@ -136,12 +269,12 @@ public class ProjectToPlane : MonoBehaviour
 
                     Color pColor = texture2D.GetPixel((int)pCoord.x, (int)pCoord.y);
                     // TODO: Get the coordinate as a vector 3 for the hit pixel and use math functions to matrix manipulate to plane
-                    /*Texture2D tMap = (Texture2D)hitPixel.collider.GetComponent<Renderer>().sharedMaterial.mainTexture;
+                    *//*Texture2D tMap = (Texture2D)hitPixel.collider.GetComponent<Renderer>().sharedMaterial.mainTexture;
 
                     int x = Mathf.FloorToInt(hitPixel.point.x);
                     int y = Mathf.FloorToInt(hitPixel.point.y);
 
-                    Color pColor = tMap.GetPixel(x, y);*/
+                    Color pColor = tMap.GetPixel(x, y);*//*
                     texture.SetPixel(row, col, pColor);
                 }
 
@@ -151,6 +284,6 @@ public class ProjectToPlane : MonoBehaviour
         }
 
         texture.Apply();
-    }
+    }*/
 
 }
