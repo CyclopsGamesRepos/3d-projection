@@ -16,8 +16,8 @@ public class ProjectToPlane : MonoBehaviour
     }
 
     // constant values
-    private const int TEXTURE_WIDTH = 128;
-    private const int TEXTURE_HEIGHT = 128;
+    private const int TEXTURE_WIDTH = 256;
+    private const int TEXTURE_HEIGHT = 256;
     private const int DRAW_PLANE_DIST = 5;
     private const float TOP = 2;
     private const float BOTTOM = -2;
@@ -43,7 +43,7 @@ public class ProjectToPlane : MonoBehaviour
     private Matrix4x4 perspectiveProjectionMatrix;
 
     /// <summary>
-    /// Start is called before the first frame update - remove?
+    /// Start is called before the first frame update
     /// </summary>
     void Start()
     {
@@ -52,34 +52,31 @@ public class ProjectToPlane : MonoBehaviour
     }
 
     /// <summary>
-    /// Update is called once per frame
+    /// Called by the UI button press to have the projections take place (removing the need to press a key)
     /// </summary>
-    void Update()
+    public void ProjectToPlanes() 
     {
-        // TODO: calculate cameras transform and rotation relative to world origin
+        // TODO: calculate cameras transform and rotation relative to world origin - for rotation when we add it
         //UpdateCameraRelativeToWorldOrigin();
 
-        // when the space bar is pressed, take a snap shot of the current objects and project them to the plane based on the camera view
-        if (Input.GetKeyDown(KeyCode.Space))
+        switch (projectionType)
         {
-            switch (projectionType) {
-                case ProjectionTypes.ORTHOGRAPHIC:
-                    //tryRacast();
-                    OrthoganalProjection();
-                    break;
+            case ProjectionTypes.ORTHOGRAPHIC:
+                //tryRacast();
+                OrthoganalProjection();
+                break;
 
-                case ProjectionTypes.PERSPECTIVE:
-                    PersectiveProjection();
-                    break;
+            case ProjectionTypes.PERSPECTIVE:
+                PersectiveProjection();
+                break;
 
-                    // Just drop through if the persepctive hasn't been set
-                default:
-                    Debug.Log("No projection type set - nothing to do!");
-                    break;
-            }
+            // Just drop through if the persepctive hasn't been set
+            default:
+                Debug.Log("No projection type set - nothing to do!");
+                break;
         }
-        
-    } // end Update
+
+    } // end ProjectToPlanes
 
     /// <summary>
     /// Updates the vectors to be used in projection based on camera's current position and rotation
@@ -226,17 +223,21 @@ public class ProjectToPlane : MonoBehaviour
     /// </summary>
     private void BuildPespMatrix()
     {
+        // This one was set up as row oriented, not column
         /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4((2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, 0),
                                                       new Vector4(0, (2 * NEAR_PLANE) / (TOP - BOTTOM), 0, 0),
                                                       new Vector4(0, 0, -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -1),
                                                       new Vector4(-NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT), -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM),
                                                                   (2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE), 0));*/
+
+        // We decided on column orientation was what worked - we think
         perspectiveProjectionMatrix = new Matrix4x4(new Vector4(-(2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT)),
                                                       new Vector4(0, -(2 * NEAR_PLANE) / (TOP - BOTTOM), 0, NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM)),
                                                       new Vector4(0, 0, (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -(2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE)),
                                                       new Vector4(0, 0, -1, 0));
     }
 
+    // Originally we wanted to raycast to get the position of each pixel - this was the wrong approach but helped us learn what we were missing.
     /*private void tryRacast()
     {
         // grab the plane mesh renderer and set up the material
