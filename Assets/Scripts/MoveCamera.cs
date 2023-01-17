@@ -19,11 +19,11 @@ public class MoveCamera : MonoBehaviour
         transform.Translate(xPos, yPos, 0);
 
         // roatate around the object in the center
-        if (Input.GetMouseButton(1))
+        /*if (Input.GetMouseButton(1))
         {
             transform.RotateAround(centerObject.position, Vector3.up, Input.GetAxis("Mouse X") * turnSpeed);
             transform.RotateAround(centerObject.position, Vector3.left, Input.GetAxis("Mouse Y") * turnSpeed);
-        }
+        }*/
 
     } // end Update
 }
