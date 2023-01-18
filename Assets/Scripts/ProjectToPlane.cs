@@ -1,9 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem.HID;
 using UnityEngine.UI;
 //using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
@@ -19,12 +15,13 @@ public class ProjectToPlane : MonoBehaviour
     private const int TEXTURE_WIDTH = 256;
     private const int TEXTURE_HEIGHT = 256;
     private const int DRAW_PLANE_DIST = 5;
-    private const float TOP = 2;
-    private const float BOTTOM = -2;
+    private const float FOV_ANGLE = (float)(90*Math.PI/180);
+    private const float TOP = 1;
+    private const float BOTTOM = -1;
     private const float LEFT = -1;
     private const float RIGHT = 1;
-    private const float NEAR_PLANE = -1f;
-    private const float FAR_PLANE = 1;
+    private const float NEAR_PLANE = 0.1f;
+    private const float FAR_PLANE = 100;
 
     // serialized fields to use in the Unity Editor
     [Header("Rendering Objects")]
@@ -49,7 +46,8 @@ public class ProjectToPlane : MonoBehaviour
     {
         BuildOrthoMatrix();
         BuildPespMatrix();
-    }
+
+    } // end Start
 
     /// <summary>
     /// Called by the UI button press to have the projections take place (removing the need to press a key)
@@ -119,10 +117,10 @@ public class ProjectToPlane : MonoBehaviour
             Vector4 updatedPosition = new Vector4(oldPosition.x, oldPosition.y, oldPosition.z, 1);
 
             // Transform to orthogonal perspective
-            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(orthographicProjectionMatrix, updatedPosition);
+            updatedPosition = GraphicsMath.MultiplyMatrix4x4ByVector4(orthographicProjectionMatrix, updatedPosition);
 
             // remove the Z component
-            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(GraphicsMath.OrthogonalProjection4x4Matrix, updatedPosition);
+            updatedPosition = GraphicsMath.MultiplyMatrix4x4ByVector4(GraphicsMath.OrthogonalProjection4x4Matrix, updatedPosition);
 
             // add the plane distance from the camera
             updatedPosition.z += DRAW_PLANE_DIST;
@@ -138,7 +136,8 @@ public class ProjectToPlane : MonoBehaviour
         {
              gameObjectsInScene[i].transform.position = oldTransforms[i];
         }
-    }
+
+    } // end OrthogonalProjection
 
     /// <summary>
     /// Creates a perspective projection onto the plane for this object
@@ -157,7 +156,18 @@ public class ProjectToPlane : MonoBehaviour
             // get the vector 3 position and make it a vector 4
             Vector4 updatedPosition = new Vector4(oldPosition.x, oldPosition.y, oldPosition.z, 1);
 
-            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(perspectiveProjectionMatrix, updatedPosition);
+            updatedPosition = GraphicsMath.MultiplyMatrix4x4ByVector4(perspectiveProjectionMatrix, updatedPosition);
+            //updatedPosition = GraphicsMath.MultiplyVector4ByMatrix4x4(updatedPosition, perspectiveProjectionMatrix);
+
+            // Think we are missing something here
+            updatedPosition /= updatedPosition.w;
+
+            float width = TEXTURE_WIDTH;
+            float height = TEXTURE_HEIGHT;
+
+            // update the x and y based on position within view with adjustments
+            updatedPosition.x = (updatedPosition.x * 1) / width / 2;
+            updatedPosition.y = (1 - (updatedPosition.y + 1) ) / height / 2;
 
             gameObjectsInScene[i].transform.position = updatedPosition;
         }
@@ -170,7 +180,8 @@ public class ProjectToPlane : MonoBehaviour
         {
             gameObjectsInScene[i].transform.position = oldTransforms[i];
         }
-    }
+
+    } // end PerspectiveProjection
 
     private void UseRenderTexture()
     {
@@ -199,7 +210,7 @@ public class ProjectToPlane : MonoBehaviour
         RenderTexture.active = null;                // added to avoid errors 
         //DestroyImmediate(rt);
 
-    }
+    } // end UseRenderTexture
 
     /// <summary>
     /// sets up the orthogonal matrix for this camera
@@ -211,31 +222,77 @@ public class ProjectToPlane : MonoBehaviour
                                                       new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), 0),
                                                       new Vector4(-(RIGHT + LEFT) / (RIGHT - LEFT), -(TOP + BOTTOM)/ (TOP - BOTTOM), 
                                                                   -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), 1));
-        /*orthographicProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, -(RIGHT + LEFT) / (RIGHT - LEFT)),
-                                                      new Vector4(0, (2 / (TOP - BOTTOM)), 0, -(TOP + BOTTOM) / (TOP - BOTTOM)),
-                                                      new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE)),
-                                                      new Vector4(0, 0, 0, 1));*/
-    }
+
+    } // end BuildOrthoMatrix
 
     /// <summary>
     /// sets up the perspective matrix for this camera
     /// </summary>
     private void BuildPespMatrix()
     {
-        // This one is column
-        // http://learnwebgl.brown37.net/08_projections/projections_perspective.html
-        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(-2 * NEAR_PLANE / (RIGHT - LEFT), 0, 0, 0),
-                                                      new Vector4(0, -2 * NEAR_PLANE / (TOP - BOTTOM), 0, 0),
-                                                      new Vector4(0, 0, (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -1),
-                                                      new Vector4(-NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT), -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM),
-                                                                  2 * FAR_PLANE * NEAR_PLANE / (NEAR_PLANE - FAR_PLANE), 0));
+        float aspectRatio = (TEXTURE_WIDTH/TEXTURE_HEIGHT);
 
-        // This is row
-        /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4(2 * NEAR_PLANE / (RIGHT - LEFT), 0, 0, -NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT)),
-                                                      new Vector4(0, 2 * NEAR_PLANE / (TOP - BOTTOM), 0, -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM)),
-                                                      new Vector4(0, 0, -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), 2 * FAR_PLANE * NEAR_PLANE / (NEAR_PLANE - FAR_PLANE)),
-                                                      new Vector4(0, 0, -1, 0));*/
-    }
+        // calculations based off Web GL site (uses left, right, bottom, top, near and far)
+        /*float top = (float)(NEAR_PLANE * Math.Tan(FOV_ANGLE / 2));
+        float bottom = -top;
+        float right = top * aspectRatio;
+        float left = -right;
+
+        float x = 2 * NEAR_PLANE / (right - left);
+        float y = 2 * NEAR_PLANE / (top - bottom);
+        float a = -NEAR_PLANE * (right + left) / (right - left);
+        float b = -NEAR_PLANE * (top + bottom) / (top - bottom);
+        float c = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+        float d = 2 * FAR_PLANE * NEAR_PLANE / (NEAR_PLANE - FAR_PLANE);
+
+        // This one is row
+        // http://learnwebgl.brown37.net/08_projections/projections_perspective.html
+        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(x, 0, 0, a),
+                                                    new Vector4(0, y, 0, b),
+                                                    new Vector4(0, 0, c, d),
+                                                    new Vector4(0, 0, -1, 0));*/
+
+        // calculations from three.js
+        float top = (float)(NEAR_PLANE * Math.Tan(FOV_ANGLE/2) );
+        float bottom = -top;
+        float right = top * aspectRatio;
+        float left = -right;
+
+        float x = 2 * NEAR_PLANE / (right - left);
+        float y = 2 * NEAR_PLANE / (top - bottom);
+        float a = (right + left) / (right - left);
+        float b = (top + bottom) / (top - bottom);
+        float c = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+        float d = -2 * FAR_PLANE * NEAR_PLANE / (FAR_PLANE - NEAR_PLANE);
+
+        // This is row based off three.js
+        /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4(x, 0, 0, 0),
+                                                    new Vector4(0, y, 0, 0),
+                                                    new Vector4(a, b, c, -1),
+                                                    new Vector4(0, 0, d, 0));*/
+
+        // This is column based off three.js
+        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(x, 0, a, 0),
+                                                    new Vector4(0, y, b, 0),
+                                                    new Vector4(0, 0, c, d),
+                                                    new Vector4(0, 0, -1, 0));
+
+        // trying a third matrix from: https://stackoverflow.com/questions/724219/how-to-convert-a-3d-point-into-2d-perspective-projection
+        /*float fov = (float)(1.0f / Math.Tan(FOV_ANGLE / 2) );
+        float x = fov * aspectRatio;
+        float y = fov;
+        float z = (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+        float w = (2.0f * NEAR_PLANE * FAR_PLANE) / (NEAR_PLANE - FAR_PLANE);
+
+        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(x, 0, 0, 0),
+                                                    new Vector4(0, y, 0, 0),
+                                                    new Vector4(0, 0, z, 1),
+                                                    new Vector4(0, 0, w, 0) );*/
+
+        // get the inverse of the matrix
+        perspectiveProjectionMatrix = GraphicsMath.GetMatrix4X4Inverse(perspectiveProjectionMatrix);
+
+    } // end BuildPespMatrix
 
     // Originally we wanted to raycast to get the position of each pixel - this was the wrong approach but helped us learn what we were missing.
     /*private void tryRacast()
