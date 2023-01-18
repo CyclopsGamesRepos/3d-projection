@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.UI;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+//using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 public class ProjectToPlane : MonoBehaviour
 {
@@ -39,7 +39,7 @@ public class ProjectToPlane : MonoBehaviour
     //private Vector4 cameraRotationOffset;
     //private Matrix4x4 cameraProjectionMatrix;
 
-    private Matrix4x4 orhthographixProjectionMatrix;
+    private Matrix4x4 orthographicProjectionMatrix;
     private Matrix4x4 perspectiveProjectionMatrix;
 
     /// <summary>
@@ -63,11 +63,11 @@ public class ProjectToPlane : MonoBehaviour
         {
             case ProjectionTypes.ORTHOGRAPHIC:
                 //tryRacast();
-                OrthoganalProjection();
+                OrthogonalProjection();
                 break;
 
             case ProjectionTypes.PERSPECTIVE:
-                PersectiveProjection();
+                PerspectiveProjection();
                 break;
 
             // Just drop through if the persepctive hasn't been set
@@ -103,7 +103,7 @@ public class ProjectToPlane : MonoBehaviour
     /// <summary>
     /// Creates an orthographic projection onto the plane for this object
     /// </summary>
-    private void OrthoganalProjection()
+    private void OrthogonalProjection()
     {
         // grab all the objects in the scene and store the transforms
         GameObject[] gameObjectsInScene = GameObject.FindGameObjectsWithTag("Projection");
@@ -119,7 +119,7 @@ public class ProjectToPlane : MonoBehaviour
             Vector4 updatedPosition = new Vector4(oldPosition.x, oldPosition.y, oldPosition.z, 1);
 
             // Transform to orthogonal perspective
-            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(orhthographixProjectionMatrix, updatedPosition);
+            updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(orthographicProjectionMatrix, updatedPosition);
 
             // remove the Z component
             updatedPosition = GraphicsMath.MultiplyMatrix4ByVector4(GraphicsMath.OrthogonalProjection4x4Matrix, updatedPosition);
@@ -131,7 +131,7 @@ public class ProjectToPlane : MonoBehaviour
         }
 
         // render the scene to our image
-        useRenderTexture();
+        UseRenderTexture();
 
         // put all the objects back!
         for (int i = 0; i < gameObjectsInScene.Length; i++)
@@ -143,13 +143,12 @@ public class ProjectToPlane : MonoBehaviour
     /// <summary>
     /// Creates a perspective projection onto the plane for this object
     /// </summary>
-    private void PersectiveProjection()
+    private void PerspectiveProjection()
     {
         // grab all the objects in the scene and store the transforms
         GameObject[] gameObjectsInScene = GameObject.FindGameObjectsWithTag("Projection");
         Vector3[] oldTransforms = new Vector3[gameObjectsInScene.Length];
-
-        // go through each game object and remove the z component (orthaganol)
+        
         for (int i = 0; i < gameObjectsInScene.Length; i++)
         {
             Vector3 oldPosition = gameObjectsInScene[i].transform.position;
@@ -164,7 +163,7 @@ public class ProjectToPlane : MonoBehaviour
         }
 
         // render the scene to our image
-        useRenderTexture();
+        UseRenderTexture();
 
         // put all the objects back!
         for (int i = 0; i < gameObjectsInScene.Length; i++)
@@ -173,7 +172,7 @@ public class ProjectToPlane : MonoBehaviour
         }
     }
 
-    private void useRenderTexture()
+    private void UseRenderTexture()
     {
         // create the texture and sprite that will hold that texture
         Texture2D tex = new Texture2D(TEXTURE_WIDTH, TEXTURE_HEIGHT, TextureFormat.ARGB32, false);
@@ -207,12 +206,12 @@ public class ProjectToPlane : MonoBehaviour
     /// </summary>
     private void BuildOrthoMatrix()
     {
-        orhthographixProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, 0),
+        orthographicProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, 0),
                                                       new Vector4(0, (2 / (TOP - BOTTOM)), 0, 0),
                                                       new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), 0),
                                                       new Vector4(-(RIGHT + LEFT) / (RIGHT - LEFT), -(TOP + BOTTOM)/ (TOP - BOTTOM), 
                                                                   -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), 1));
-        /*orhthographixProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, -(RIGHT + LEFT) / (RIGHT - LEFT)),
+        /*orthographicProjectionMatrix = new Matrix4x4(new Vector4((2 / (RIGHT - LEFT)), 0, 0, -(RIGHT + LEFT) / (RIGHT - LEFT)),
                                                       new Vector4(0, (2 / (TOP - BOTTOM)), 0, -(TOP + BOTTOM) / (TOP - BOTTOM)),
                                                       new Vector4(0, 0, (-2 / (FAR_PLANE - NEAR_PLANE)), -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE)),
                                                       new Vector4(0, 0, 0, 1));*/
@@ -223,18 +222,19 @@ public class ProjectToPlane : MonoBehaviour
     /// </summary>
     private void BuildPespMatrix()
     {
-        // This one was set up as row oriented, not column
-        /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4((2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, 0),
-                                                      new Vector4(0, (2 * NEAR_PLANE) / (TOP - BOTTOM), 0, 0),
-                                                      new Vector4(0, 0, -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -1),
+        // This one is column
+        // http://learnwebgl.brown37.net/08_projections/projections_perspective.html
+        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(-2 * NEAR_PLANE / (RIGHT - LEFT), 0, 0, 0),
+                                                      new Vector4(0, -2 * NEAR_PLANE / (TOP - BOTTOM), 0, 0),
+                                                      new Vector4(0, 0, (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -1),
                                                       new Vector4(-NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT), -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM),
-                                                                  (2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE), 0));*/
+                                                                  2 * FAR_PLANE * NEAR_PLANE / (NEAR_PLANE - FAR_PLANE), 0));
 
-        // We decided on column orientation was what worked - we think
-        perspectiveProjectionMatrix = new Matrix4x4(new Vector4(-(2 * NEAR_PLANE) / (RIGHT - LEFT), 0, 0, NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT)),
-                                                      new Vector4(0, -(2 * NEAR_PLANE) / (TOP - BOTTOM), 0, NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM)),
-                                                      new Vector4(0, 0, (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), -(2 * FAR_PLANE * NEAR_PLANE) / (NEAR_PLANE - FAR_PLANE)),
-                                                      new Vector4(0, 0, -1, 0));
+        // This is row
+        /*perspectiveProjectionMatrix = new Matrix4x4(new Vector4(2 * NEAR_PLANE / (RIGHT - LEFT), 0, 0, -NEAR_PLANE * (RIGHT + LEFT) / (RIGHT - LEFT)),
+                                                      new Vector4(0, 2 * NEAR_PLANE / (TOP - BOTTOM), 0, -NEAR_PLANE * (TOP + BOTTOM) / (TOP - BOTTOM)),
+                                                      new Vector4(0, 0, -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE), 2 * FAR_PLANE * NEAR_PLANE / (NEAR_PLANE - FAR_PLANE)),
+                                                      new Vector4(0, 0, -1, 0));*/
     }
 
     // Originally we wanted to raycast to get the position of each pixel - this was the wrong approach but helped us learn what we were missing.
@@ -246,7 +246,7 @@ public class ProjectToPlane : MonoBehaviour
         GetComponent<Image>().sprite = sprite;
 
         // starting with orthographic - basically creating an image as we go
-        Debug.Log("Start projection - Othrographic");
+        Debug.Log("Start projection - Orthographic");
         RaycastHit hitPixel;
 
         Vector3 forward = transform.TransformDirection(Vector3.forward);
