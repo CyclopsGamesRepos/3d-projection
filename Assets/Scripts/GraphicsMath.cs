@@ -94,12 +94,12 @@ public class GraphicsMath : MonoBehaviour
     }
 
     /// <summary>
-    /// Takes in a 4x4 matrix and multiplies it by a Vector 4 to get the cross product
+    /// Takes in a 4x4 matrix and multiplies it by a Vector 4
     /// </summary>
     /// <param name="squareMatrix">The matrix to be multipled</param>
     /// <param name="columnVector">The vector 4 as a column vector</param>
     /// <returns></returns>
-    public static Vector4 MultiplyMatrix4ByVector4(Matrix4x4 squareMatrix, Vector4 columnVector)
+    public static Vector4 MultiplyMatrix4x4ByVector4(Matrix4x4 squareMatrix, Vector4 columnVector)
     {
 
         float vecX = (squareMatrix.m00 * columnVector.x) + (squareMatrix.m01 * columnVector.y) + 
@@ -110,6 +110,28 @@ public class GraphicsMath : MonoBehaviour
                         (squareMatrix.m22 * columnVector.z) + (squareMatrix.m23 * columnVector.w);
         float vecW = (squareMatrix.m30 * columnVector.x) + (squareMatrix.m31 * columnVector.y) +
                         (squareMatrix.m32 * columnVector.z) + (squareMatrix.m33 * columnVector.w);
+
+        Vector4 output = new Vector4(vecX, vecY, vecZ, vecW);
+        return output;
+    }
+
+    /// <summary>
+    /// Takes in a Vctor 4 and multiply it by a 4x4 matrix
+    /// </summary>
+    /// <param name="rownVector">The vector 4 as a column vector</param>
+    /// <param name="squareMatrix">The matrix to be multipled</param>
+    /// <returns></returns>
+    public static Vector4 MultiplyVector4ByMatrix4x4(Vector4 rowVector, Matrix4x4 squareMatrix)
+    {
+
+        float vecX = (rowVector.x * squareMatrix.m00) + (rowVector.y * squareMatrix.m10) +
+                        (rowVector.z * squareMatrix.m20) + (rowVector.w * squareMatrix.m30);
+        float vecY = (rowVector.x * squareMatrix.m01) + (rowVector.y * squareMatrix.m11) +
+                        (rowVector.z * squareMatrix.m21) + (rowVector.w * squareMatrix.m31);
+        float vecZ = (rowVector.x * squareMatrix.m02) + (rowVector.y * squareMatrix.m12) +
+                        (rowVector.z * squareMatrix.m22) + (rowVector.w * squareMatrix.m32);
+        float vecW = (rowVector.x * squareMatrix.m03) + (rowVector.y * squareMatrix.m13) +
+                        (rowVector.z * squareMatrix.m23) + (rowVector.w * squareMatrix.m33);
 
         Vector4 output = new Vector4(vecX, vecY, vecZ, vecW);
         return output;
@@ -223,4 +245,124 @@ public class GraphicsMath : MonoBehaviour
 
         return returnMatrix;
     }
+    public static float getMatrix4x4Determinant(Matrix4x4 matrix)
+    {
+        // https://gamemath.com/book/matrixmore.html#determinant_arbitrary_size
+        float m00 = matrix.m11 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                    matrix.m12 * (matrix.m23 * matrix.m31 - matrix.m21 * matrix.m33) +
+                    matrix.m13 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m31);
+
+        float m01 = matrix.m10 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                    matrix.m12 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m33) +
+                    matrix.m13 * (matrix.m20 * matrix.m32 - matrix.m22 * matrix.m30);
+
+        float m02 = matrix.m10 * (matrix.m21 * matrix.m33 - matrix.m23 * matrix.m31) +
+                    matrix.m11 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m33) +
+                    matrix.m13 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30);
+
+        float m03 = matrix.m10 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m31) +
+                    matrix.m11 * (matrix.m22 * matrix.m30 - matrix.m20 * matrix.m32) +
+                    matrix.m12 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30);
+
+        return (m00 - m01 + m02 - m03);
+    }
+
+    public static Matrix4x4 GetMatrix4X4Inverse(Matrix4x4 matrix)
+    {
+        // calculate the determinant and divide 1 by it 
+        float inverseDeterminant = 1/getMatrix4x4Determinant(matrix);
+
+        // https://gamemath.com/book/matrixmore.html#inverse
+        //pos
+        float c00 = (matrix.m11 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                     matrix.m12 * (matrix.m23 * matrix.m31 - matrix.m21 * matrix.m33) +
+                     matrix.m13 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m31) ) * inverseDeterminant;
+
+        // neg
+        float c01 = -(matrix.m10 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                      matrix.m12 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m33) +
+                      matrix.m13 * (matrix.m20 * matrix.m32 - matrix.m22 * matrix.m30) ) * inverseDeterminant;
+
+        // pos
+        float c02 = (matrix.m10 * (matrix.m21 * matrix.m33 - matrix.m23 * matrix.m31) +
+                     matrix.m11 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m33) +
+                     matrix.m13 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30) ) * inverseDeterminant;
+
+        // neg
+        float c03 = -(matrix.m10 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m31) +
+                      matrix.m11 * (matrix.m22 * matrix.m30 - matrix.m20 * matrix.m32) +
+                      matrix.m12 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30) ) * inverseDeterminant;
+
+        // neg
+        float c10 = -(matrix.m01 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                      matrix.m02 * (matrix.m23 * matrix.m31 - matrix.m21 * matrix.m33) +
+                      matrix.m03 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m33) ) * inverseDeterminant;
+
+        // pos
+        float c11 = (matrix.m00 * (matrix.m22 * matrix.m33 - matrix.m23 * matrix.m32) +
+                     matrix.m02 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m33) +
+                     matrix.m03 * (matrix.m20 * matrix.m32 - matrix.m22 * matrix.m30) ) * inverseDeterminant;
+
+        // neg
+        float c12 = -(matrix.m00 * (matrix.m21 * matrix.m33 - matrix.m23 * matrix.m31) +
+                      matrix.m01 * (matrix.m23 * matrix.m30 - matrix.m20 * matrix.m31) +
+                      matrix.m03 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30) ) * inverseDeterminant;
+
+        // pos
+        float c13 = (matrix.m00 * (matrix.m21 * matrix.m32 - matrix.m22 * matrix.m31) +
+                     matrix.m01 * (matrix.m22 * matrix.m30 - matrix.m20 * matrix.m32) +
+                     matrix.m02 * (matrix.m20 * matrix.m31 - matrix.m21 * matrix.m30) ) * inverseDeterminant;
+
+        // pos
+        float c20 = (matrix.m01 * (matrix.m12 * matrix.m33 - matrix.m13 * matrix.m32) +
+                     matrix.m02 * (matrix.m13 * matrix.m31 - matrix.m11 * matrix.m33) +
+                     matrix.m03 * (matrix.m11 * matrix.m32 - matrix.m12 * matrix.m31) ) * inverseDeterminant;
+
+        // neg
+        float c21 = -(matrix.m00 * (matrix.m11 * matrix.m33 - matrix.m13 * matrix.m32) +
+                      matrix.m02 * (matrix.m13 * matrix.m30 - matrix.m10 * matrix.m33) +
+                      matrix.m03 * (matrix.m10 * matrix.m32 - matrix.m12 * matrix.m30) ) * inverseDeterminant;
+
+        // pos
+        float c22 = (matrix.m00 * (matrix.m11 * matrix.m33 - matrix.m13 * matrix.m31) +
+                     matrix.m01 * (matrix.m13 * matrix.m30 - matrix.m10 * matrix.m33) +
+                     matrix.m03 * (matrix.m10 * matrix.m31 - matrix.m11 * matrix.m30) ) * inverseDeterminant;
+
+        // neg
+        float c23 = -(matrix.m00 * (matrix.m11 * matrix.m32 - matrix.m12 * matrix.m31) +
+                      matrix.m01 * (matrix.m12 * matrix.m30 - matrix.m10 * matrix.m32) +
+                      matrix.m02 * (matrix.m10 * matrix.m31 - matrix.m11 * matrix.m30) ) * inverseDeterminant;
+
+        // neg 
+        float c30 = -(matrix.m00 * (matrix.m12 * matrix.m23 - matrix.m13 * matrix.m22) +
+                      matrix.m02 * (matrix.m13 * matrix.m21 - matrix.m11 * matrix.m23) +
+                      matrix.m03 * (matrix.m11 * matrix.m22 - matrix.m12 * matrix.m21) ) * inverseDeterminant;
+
+        // pos
+        float c31 = (matrix.m00 * (matrix.m11 * matrix.m23 - matrix.m13 * matrix.m21) +
+                     matrix.m02 * (matrix.m13 * matrix.m20 - matrix.m10 * matrix.m23) +
+                     matrix.m03 * (matrix.m10 * matrix.m21 - matrix.m11 * matrix.m20) ) * inverseDeterminant;
+
+        // neg 
+        float c32 = -(matrix.m00 * (matrix.m11 * matrix.m23 - matrix.m13 * matrix.m21) +
+                      matrix.m01 * (matrix.m13 * matrix.m20 - matrix.m10 * matrix.m23) +
+                      matrix.m03 * (matrix.m10 * matrix.m21 - matrix.m11 * matrix.m20) ) * inverseDeterminant;
+
+        // pos
+        float c33 = (matrix.m00 * (matrix.m11 * matrix.m22 - matrix.m12 * matrix.m21) +
+                     matrix.m01 * (matrix.m12 * matrix.m20 - matrix.m10 * matrix.m22) +
+                     matrix.m02 * (matrix.m10 * matrix.m21 - matrix.m11 * matrix.m20) ) * inverseDeterminant;
+
+        // The classical adjoint of is the transpose of the matrix of cofactors
+        // M = { [c00, c01, c02, c03],      adj M = M transpose = { [c00, c10, c20, c30],
+        //       [c10, c11, c12, c13],                              [c01, c11, c21, c31],
+        //       [c20, c21, c22, c23],                              [c02, c12, c22, c32],
+        //       [c30, c31, c32, c33], }                            [c03, c13, c23, c33],
+
+        return new Matrix4x4(new Vector4(c00, c10, c20, c30),
+                              new Vector4(c01, c11, c21, c31),
+                              new Vector4(c02, c12, c22, c32),
+                              new Vector4(c03, c13, c23, c33));
+
+    } // end GetMatrix4X4Inverse
 }
