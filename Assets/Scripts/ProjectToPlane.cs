@@ -14,14 +14,16 @@ public class ProjectToPlane : MonoBehaviour
     // constant values
     private const int TEXTURE_WIDTH = 256;
     private const int TEXTURE_HEIGHT = 256;
-    private const int DRAW_PLANE_DIST = 5;
-    private const float FOV_ANGLE = (float)(90*Math.PI/180);
-    private const float TOP = 1;
-    private const float BOTTOM = -1;
-    private const float LEFT = -1;
-    private const float RIGHT = 1;
+    private const int DRAW_PLANE_DIST = 15;
+    private const int DRAW_PLANE_DIST_PERS = 2;
+    // https://stormconsultancy.co.uk/blog/storm-news/convert-an-angle-in-degrees-to-radians-in-c/
+    private const float FOV_ANGLE = (float)(90 * (Math.PI / 180));//(float)(90*Math.PI/4); //fovy
+    private const float TOP = 1f;
+    private const float BOTTOM = -1f;
+    private const float LEFT = -1f;
+    private const float RIGHT = 1f;
     private const float NEAR_PLANE = 0.1f;
-    private const float FAR_PLANE = 100;
+    private const float FAR_PLANE = 100f;
 
     // serialized fields to use in the Unity Editor
     [Header("Rendering Objects")]
@@ -46,6 +48,7 @@ public class ProjectToPlane : MonoBehaviour
     {
         BuildOrthoMatrix();
         BuildPespMatrix();
+        Debug.Log(FOV_ANGLE);
 
     } // end Start
 
@@ -160,17 +163,28 @@ public class ProjectToPlane : MonoBehaviour
             //updatedPosition = GraphicsMath.MultiplyVector4ByMatrix4x4(updatedPosition, perspectiveProjectionMatrix);
 
             // Think we are missing something here
-            updatedPosition /= updatedPosition.w;
+            updatedPosition.z += DRAW_PLANE_DIST_PERS;
 
             float width = TEXTURE_WIDTH;
             float height = TEXTURE_HEIGHT;
 
             // update the x and y based on position within view with adjustments
-            updatedPosition.x = (updatedPosition.x * 1) / width / 2;
-            updatedPosition.y = (1 - (updatedPosition.y + 1) ) / height / 2;
+            //updatedPosition.x = (updatedPosition.x * 1) / width / 2;
+            //updatedPosition.y = (1 - (updatedPosition.y + 1) ) / height / 2;
+            // this works (maybe a little obvious, but it the transform is being malformed by the matrix somehow
+            if (i == 0)
+            {
+                Debug.Log("old" + oldPosition);
+                Debug.Log("updated" + updatedPosition);   
+            }
 
             gameObjectsInScene[i].transform.position = updatedPosition;
         }
+
+        /*Vector3 oldPosition = projectionCamera.transform.position;
+        Vector4 updatedPosition = new Vector4(projectionCamera.transform.position.x, projectionCamera.transform.position.y, projectionCamera.transform.position.z, 1);
+        updatedPosition = GraphicsMath.MultiplyMatrix4x4ByVector4(perspectiveProjectionMatrix, updatedPosition);
+        projectionCamera.transform.position = updatedPosition;*/
 
         // render the scene to our image
         UseRenderTexture();
@@ -180,6 +194,8 @@ public class ProjectToPlane : MonoBehaviour
         {
             gameObjectsInScene[i].transform.position = oldTransforms[i];
         }
+
+        //projectionCamera.transform.position = oldPosition;
 
     } // end PerspectiveProjection
 
@@ -261,7 +277,7 @@ public class ProjectToPlane : MonoBehaviour
         float x = 2 * NEAR_PLANE / (right - left);
         float y = 2 * NEAR_PLANE / (top - bottom);
         float a = (right + left) / (right - left);
-        float b = (top + bottom) / (top - bottom);
+        float b = (top + bottom) / (top - bottom); // 0 / -2
         float c = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
         float d = -2 * FAR_PLANE * NEAR_PLANE / (FAR_PLANE - NEAR_PLANE);
 
@@ -274,7 +290,7 @@ public class ProjectToPlane : MonoBehaviour
         // This is column based off three.js
         perspectiveProjectionMatrix = new Matrix4x4(new Vector4(x, 0, a, 0),
                                                     new Vector4(0, y, b, 0),
-                                                    new Vector4(0, 0, c, d),
+                                                    new Vector4(0, 0, -c, d),
                                                     new Vector4(0, 0, -1, 0));
 
         // trying a third matrix from: https://stackoverflow.com/questions/724219/how-to-convert-a-3d-point-into-2d-perspective-projection
@@ -290,7 +306,7 @@ public class ProjectToPlane : MonoBehaviour
                                                     new Vector4(0, 0, w, 0) );*/
 
         // get the inverse of the matrix
-        perspectiveProjectionMatrix = GraphicsMath.GetMatrix4X4Inverse(perspectiveProjectionMatrix);
+        //perspectiveProjectionMatrix = GraphicsMath.GetMatrix4X4Inverse(perspectiveProjectionMatrix);
 
     } // end BuildPespMatrix
 
